@@ -12,9 +12,13 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.conf import settings
 from datetime import datetime, timedelta
 import json
 import uuid
+from google import genai
+from google.genai import types
+
 
 from .models import MeetingRequest, Participant, BusySlot, SuggestedSlot
 from .user_profile import UserProfile
@@ -264,20 +268,42 @@ def create_request_step1(request):
             meeting_request.save()
             # Store ID in session for next steps
             request.session['meeting_request_id'] = str(meeting_request.id)
+            # Clear AI data from session
+            if 'ai_meeting_data' in request.session:
+                del request.session['ai_meeting_data']
             return redirect('create_request_step2')
     else:
-        # Set default values
-        initial = {
-            'date_range_start': timezone.now().date(),
-            'date_range_end': timezone.now().date() + timedelta(days=7),
-            'duration_minutes': 60,
-            'timezone': 'Asia/Ho_Chi_Minh',
-            'work_hours_start': '09:00',
-            'work_hours_end': '18:00',
-            'step_size_minutes': 30,
-            'work_days_only': True,
-            'created_by_email': request.user.email,
-        }
+        # Check if there's AI-generated data in session
+        ai_data = request.session.get('ai_meeting_data')
+        
+        if ai_data:
+            # Pre-fill form with AI data
+            initial = {
+                'title': ai_data.get('title', ''),
+                'description': ai_data.get('description', ''),
+                'duration_minutes': ai_data.get('duration_minutes', 60),
+                'date_range_start': ai_data.get('date_range_start'),
+                'date_range_end': ai_data.get('date_range_end'),
+                'timezone': 'Asia/Ho_Chi_Minh',
+                'work_hours_start': '09:00',
+                'work_hours_end': '18:00',
+                'step_size_minutes': 30,
+                'work_days_only': True,
+                'created_by_email': request.user.email,
+            }
+        else:
+            # Set default values
+            initial = {
+                'date_range_start': timezone.now().date(),
+                'date_range_end': timezone.now().date() + timedelta(days=7),
+                'duration_minutes': 60,
+                'timezone': 'Asia/Ho_Chi_Minh',
+                'work_hours_start': '09:00',
+                'work_hours_end': '18:00',
+                'step_size_minutes': 30,
+                'work_days_only': True,
+                'created_by_email': request.user.email,
+            }
         form = MeetingRequestForm(initial=initial)
     
     return render(request, 'meetings/create_step1.html', {'form': form})
@@ -777,6 +803,111 @@ def api_get_suggestions(request, request_id):
         })
     
     return JsonResponse({'suggestions': data})
+
+
+# =============================================================================
+# AI-POWERED MEETING CREATION
+# =============================================================================
+
+@login_required
+@require_http_methods(["POST"])
+def generate_meeting_with_ai(request):
+    """Generate meeting details using Gemini AI based on user prompt"""
+    try:
+        # Get the prompt from request
+        data = json.loads(request.body)
+        user_prompt = data.get('prompt', '').strip()
+        
+        if not user_prompt:
+            return JsonResponse({
+                'error': 'Vui lòng nhập mô tả cuộc họp'
+            }, status=400)
+        
+        # Check if Gemini API key is configured
+        if not settings.GEMINI_API_KEY:
+            return JsonResponse({
+                'error': 'Gemini API key chưa được cấu hình. Vui lòng liên hệ quản trị viên.'
+            }, status=500)
+        
+        # Configure Gemini
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        
+        # Build the prompt for Gemini
+        system_prompt = f"""You are a meeting scheduler assistant. Based on the user's request, generate meeting details in JSON format.
+
+Current date and time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+Return ONLY a valid JSON object with these fields:
+- title: Meeting title (string, max 200 chars)
+- description: Meeting description (string, max 500 chars)
+- duration_minutes: Meeting duration in minutes (integer, default 60)
+- date_range_start: Start date for scheduling (YYYY-MM-DD format)
+- date_range_end: End date for scheduling (YYYY-MM-DD format)
+
+Rules:
+- If user mentions "within X weeks/days", calculate date_range_end accordingly.
+- If no time frame mentioned, then choose a time frame that makes sense.
+- Duration should be reasonable (15, 30, 60, 90, or 120 minutes).
+- Title should be concise and professional.
+- Description should be clear and include the main topics.
+- date_range_start should not be before the current date.
+- date_range_end should be after date_range_start.
+
+Return ONLY the JSON object, no other text:""".format(
+            current_date=timezone.now().strftime('%Y-%m-%d'),
+            user_request=user_prompt
+        )
+        
+        # Call Gemini API
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    thinking_config=types.ThinkingConfig(thinking_budget=0) 
+            ),
+            contents=user_prompt
+        )
+        
+        # Parse the response
+        response_text = response.text.strip()
+        
+        # Remove markdown code blocks if present
+        if response_text.startswith('```json'):
+            response_text = response_text[7:]
+        elif response_text.startswith('```'):
+            response_text = response_text[3:]
+        if response_text.endswith('```'):
+            response_text = response_text[:-3]
+        
+        response_text = response_text.strip()
+        print(f"Gemini response: {response_text}")
+        # Parse JSON
+        meeting_data = json.loads(response_text)
+        
+        # Validate required fields
+        required_fields = ['title', 'description', 'duration_minutes', 'date_range_start', 'date_range_end']
+        for field in required_fields:
+            if field not in meeting_data:
+                return JsonResponse({
+                    'error': f'AI response thiếu trường: {field}'
+                }, status=500)
+        
+        # Store in session for the create form
+        request.session['ai_meeting_data'] = meeting_data
+        
+        return JsonResponse({
+            'success': True,
+            'data': meeting_data
+        })
+        
+    except json.JSONDecodeError as e:
+        return JsonResponse({
+            'error': f'AI trả về dữ liệu không hợp lệ: {str(e)}'
+        }, status=500)
+    except Exception as e:
+        return JsonResponse({
+            'error': f'Lỗi khi gọi AI: {str(e)}'
+        }, status=500)
 
 
 # =============================================================================

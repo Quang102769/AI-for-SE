@@ -160,3 +160,6 @@ SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')  # Base URL for e
 
 # Email verification settings
 EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS = int(os.environ.get('EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS', 24))  # Verification link expires after 24 hours
+
+# Gemini AI settings
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
