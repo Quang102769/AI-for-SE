@@ -66,10 +66,9 @@ LOGIN_FEATURE_SUMMARY.md
 QUICK_REFERENCE.md
 TESTING_CHECKLIST.md
 EMAIL_*.md
-test_project_features.sh
 setup_ai_feature.sh
 AI_*.md
 PROJECT*.md
-test_email_system.py
-test_unverified_login.py
+test_*.py
+test*.sh
 setup_login.sh

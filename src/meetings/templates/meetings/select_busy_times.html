@@ -29,6 +29,13 @@
                             <li>Click vào ô đã chọn để bỏ chọn</li>
                             <li>Nhấn "Lưu" khi hoàn tất</li>
                         </ol>
+                        <div class="alert alert-info">
+                            <i class="bi bi-lightbulb"></i> 
+                            <strong>Mẹo:</strong> Bạn có thể sử dụng AI để tự động tạo lịch bận từ mô tả văn bản!
+                            <button type="button" class="btn btn-sm btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#aiInputModal">
+                                <i class="bi bi-stars"></i> Nhập với AI
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Calendar Grid -->
@@ -134,6 +141,57 @@
         background: #ffc107;
     }
 </style>
+
+<!-- AI Input Modal -->
+<div class="modal fade" id="aiInputModal" tabindex="-1" aria-labelledby="aiInputModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="aiInputModalLabel">
+                    <i class="bi bi-stars"></i> Nhập Lịch Bận với AI
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">
+                    Mô tả các khoảng thời gian bạn bận bằng ngôn ngữ tự nhiên. AI sẽ tự động tạo lịch bận cho bạn.
+                </p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Lưu ý:</strong> Việc sử dụng AI sẽ <strong>xóa tất cả</strong> các lịch bận hiện tại và thay thế bằng lịch mới từ AI.
+                </div>
+                <div class="mb-3">
+                    <label for="aiPrompt" class="form-label">
+                        <strong>Mô tả lịch bận của bạn:</strong>
+                    </label>
+                    <textarea class="form-control" id="aiPrompt" rows="5" 
+                        placeholder="Ví dụ: Tôi bận vào các buổi sáng thứ 2 và thứ 4 từ 9h đến 12h. Chiều thứ 3 từ 14h đến 17h tôi cũng không rảnh. Ngoài ra, tôi bận cả ngày thứ 6 tuần này."></textarea>
+                    <small class="form-text text-muted">
+                        Bạn có thể nhập bằng tiếng Việt hoặc tiếng Anh. Hãy cung cấp:
+                        <ul>
+                            <li>Các ngày trong tuần hoặc ngày cụ thể</li>
+                            <li>Khung giờ bận</li>
+                            <li>Bất kỳ chi tiết nào khác về lịch của bạn</li>
+                        </ul>
+                    </small>
+                </div>
+                <div id="aiError" class="alert alert-danger d-none"></div>
+                <div id="aiLoading" class="text-center d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang xử lý...</span>
+                    </div>
+                    <p class="mt-2">AI đang phân tích lịch bận của bạn...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" id="generateAiBusyBtn">
+                    <i class="bi bi-stars"></i> Tạo với AI
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}
 
@@ -325,5 +383,93 @@
             }
         });
     });
+
+    // AI Busy Time Generation
+    $('#generateAiBusyBtn').click(function () {
+        const prompt = $('#aiPrompt').val().trim();
+        const aiError = $('#aiError');
+        const aiLoading = $('#aiLoading');
+        const generateBtn = $(this);
+        
+        if (!prompt) {
+            aiError.removeClass('d-none');
+            aiError.text('Vui lòng nhập mô tả lịch bận của bạn');
+            return;
+        }
+
+        // Hide error and show loading
+        aiError.addClass('d-none');
+        aiLoading.removeClass('d-none');
+        generateBtn.prop('disabled', true);
+
+        // Get CSRF token
+        const csrfToken = $('[name=csrfmiddlewaretoken]').val() || '';
+
+        // Call API with meeting context
+        $.ajax({
+            url: '/api/generate-busy-times-ai/',
+            method: 'POST',
+            contentType: 'application/json',
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            data: JSON.stringify({
+                prompt: prompt,
+                meeting_request_id: '{{ meeting_request.id }}',
+                participant_timezone: '{{ participant.timezone }}',
+                date_range_start: '{{ meeting_request.date_range_start|date:"Y-m-d" }}',
+                date_range_end: '{{ meeting_request.date_range_end|date:"Y-m-d" }}',
+                work_hours_start: '{{ meeting_request.work_hours_start }}',
+                work_hours_end: '{{ meeting_request.work_hours_end }}'
+            }),
+            success: function (response) {
+                aiLoading.addClass('d-none');
+                generateBtn.prop('disabled', false);
+
+                if (response.success && response.busy_slots) {
+                    // Clear current busy cells
+                    $('.time-cell.busy').removeClass('busy');
+                    
+                    // Mark new busy slots on calendar
+                    response.busy_slots.forEach(slot => {
+                        $('.time-cell').each(function () {
+                            const cellDateTime = $(this).data('datetime');
+                            if (cellDateTime >= slot.start && cellDateTime < slot.end) {
+                                $(this).addClass('busy');
+                            }
+                        });
+                    });
+                    
+                    // Update the busy slots list
+                    updateBusySlotsList();
+                    
+                    // Close modal
+                    const aiModal = bootstrap.Modal.getInstance($('#aiInputModal')[0]);
+                    aiModal.hide();
+                    
+                    // Show success message
+                    alert('✨ AI đã tạo lịch bận thành công! Vui lòng kiểm tra và điều chỉnh nếu cần.');
+                } else {
+                    aiError.removeClass('d-none');
+                    aiError.text(response.error || 'Đã xảy ra lỗi');
+                }
+            },
+            error: function (xhr) {
+                aiLoading.addClass('d-none');
+                generateBtn.prop('disabled', false);
+                aiError.removeClass('d-none');
+                aiError.text('Lỗi kết nối: ' + (xhr.responseJSON?.error || xhr.statusText));
+            }
+        });
+    });
+
+    // Clear AI modal when closed
+    $('#aiInputModal').on('hidden.bs.modal', function () {
+        $('#aiPrompt').val('');
+        $('#aiError').addClass('d-none');
+        $('#aiLoading').addClass('d-none');
+        $('#generateAiBusyBtn').prop('disabled', false);
+    });
+
 </script>
 {% endblock %}

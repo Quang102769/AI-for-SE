@@ -910,6 +910,155 @@ Return ONLY the JSON object, no other text:""".format(
         }, status=500)
 
 
+@csrf_exempt
+@require_http_methods(["POST"])
+def generate_busy_times_with_ai(request):
+    """Generate busy time slots using Gemini AI based on user's natural language description"""
+    try:
+        # Get the request data
+        data = json.loads(request.body)
+        user_prompt = data.get('prompt', '').strip()
+        meeting_request_id = data.get('meeting_request_id')
+        participant_timezone = data.get('participant_timezone', 'UTC')
+        date_range_start = data.get('date_range_start')
+        date_range_end = data.get('date_range_end')
+        work_hours_start = data.get('work_hours_start', '09:00')
+        work_hours_end = data.get('work_hours_end', '17:00')
+        
+        if not user_prompt:
+            return JsonResponse({
+                'error': 'Vui lòng nhập mô tả lịch bận của bạn'
+            }, status=400)
+        
+        # Check if Gemini API key is configured
+        if not settings.GEMINI_API_KEY:
+            return JsonResponse({
+                'error': 'Gemini API key chưa được cấu hình. Vui lòng liên hệ quản trị viên.'
+            }, status=500)
+        
+        # Configure Gemini
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        
+        # Build the prompt for Gemini
+        system_prompt = f"""You are a scheduling assistant. Based on the user's natural language description of their busy times, generate a structured list of busy time slots in JSON format.
+
+Current date and time: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}
+Participant's timezone: {participant_timezone}
+Meeting date range: {date_range_start} to {date_range_end}
+Typical work hours: {work_hours_start} to {work_hours_end}
+
+Return ONLY a valid JSON object with this structure:
+{{
+  "busy_slots": [
+    {{
+      "start": "YYYY-MM-DDTHH:MM",
+      "end": "YYYY-MM-DDTHH:MM",
+      "description": "Brief description of why busy"
+    }}
+  ]
+}}
+
+Rules:
+1. All dates must be within the meeting date range ({date_range_start} to {date_range_end})
+2. Times should be in 24-hour format (HH:MM)
+3. Parse relative dates like "Monday", "Tuesday", "next week", "this Friday" relative to current date
+4. Parse time descriptions like "morning" (09:00-12:00), "afternoon" (13:00-17:00), "evening" (18:00-20:00)
+5. If user says "all day", use {work_hours_start} to {work_hours_end}
+6. If user says "the whole week", create slots for Mon-Fri of that week
+7. Round times to 15-minute intervals (e.g., 9:13 becomes 9:15)
+8. Do not create overlapping time slots
+9. Sort slots chronologically
+
+Examples:
+- "Monday morning" → Monday 09:00-12:00
+- "Tuesday 2-4pm" → Tuesday 14:00-16:00
+- "All day Friday" → Friday 09:00-17:00
+- "Mon and Wed afternoons" → Monday 13:00-17:00, Wednesday 13:00-17:00
+
+Return ONLY the JSON object, no other text."""
+        
+        # Call Gemini API
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                thinking_config=types.ThinkingConfig(thinking_budget=0)
+            ),
+            contents=user_prompt
+        )
+        
+        # Parse the response
+        response_text = response.text.strip()
+        
+        # Remove markdown code blocks if present
+        if response_text.startswith('```json'):
+            response_text = response_text[7:]
+        elif response_text.startswith('```'):
+            response_text = response_text[3:]
+        if response_text.endswith('```'):
+            response_text = response_text[:-3]
+        
+        response_text = response_text.strip()
+        print(f"Gemini busy times response: {response_text}")
+        
+        # Parse JSON
+        busy_data = json.loads(response_text)
+        
+        # Validate structure
+        if 'busy_slots' not in busy_data:
+            return JsonResponse({
+                'error': 'AI response không chứa busy_slots'
+            }, status=500)
+        
+        busy_slots = busy_data['busy_slots']
+        
+        # Validate each slot
+        for slot in busy_slots:
+            if 'start' not in slot or 'end' not in slot:
+                return JsonResponse({
+                    'error': 'AI response thiếu trường start hoặc end'
+                }, status=500)
+            
+            # Validate date format and range
+            try:
+                start_dt = datetime.strptime(slot['start'], '%Y-%m-%dT%H:%M')
+                end_dt = datetime.strptime(slot['end'], '%Y-%m-%dT%H:%M')
+                
+                # Check if within meeting range
+                range_start = datetime.strptime(date_range_start, '%Y-%m-%d')
+                range_end = datetime.strptime(date_range_end, '%Y-%m-%d')
+                
+                if start_dt.date() < range_start.date() or end_dt.date() > range_end.date():
+                    return JsonResponse({
+                        'error': f'Thời gian {slot["start"]} đến {slot["end"]} nằm ngoài phạm vi cuộc họp'
+                    }, status=400)
+                
+                if end_dt <= start_dt:
+                    return JsonResponse({
+                        'error': f'Thời gian kết thúc phải sau thời gian bắt đầu: {slot["start"]} - {slot["end"]}'
+                    }, status=400)
+                    
+            except ValueError as e:
+                return JsonResponse({
+                    'error': f'Định dạng thời gian không hợp lệ: {str(e)}'
+                }, status=400)
+        
+        return JsonResponse({
+            'success': True,
+            'busy_slots': busy_slots,
+            'message': f'Đã tạo {len(busy_slots)} khoảng thời gian bận'
+        })
+        
+    except json.JSONDecodeError as e:
+        return JsonResponse({
+            'error': f'AI trả về dữ liệu không hợp lệ: {str(e)}'
+        }, status=500)
+    except Exception as e:
+        return JsonResponse({
+            'error': f'Lỗi khi gọi AI: {str(e)}'
+        }, status=500)
+
+
 # =============================================================================
 # EMAIL VERIFICATION
 # =============================================================================
