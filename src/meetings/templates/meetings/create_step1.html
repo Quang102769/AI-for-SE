@@ -27,8 +27,11 @@
             </div>
 
             <div class="card shadow">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h4 class="mb-0"><i class="bi bi-gear"></i> Bước 1: Thiết lập thông tin cuộc họp</h4>
+                    <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#aiModal">
+                        <i class="bi bi-stars"></i> Tạo với AI
+                    </button>
                 </div>
                 <div class="card-body">
                     <form method="post">
@@ -192,4 +195,114 @@
     margin-top: 20px;
 }
 </style>
+
+<!-- AI Meeting Generation Modal -->
+<div class="modal fade" id="aiModal" tabindex="-1" aria-labelledby="aiModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="aiModalLabel">
+                    <i class="bi bi-stars"></i> Tạo Cuộc Họp với AI
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">
+                    Mô tả cuộc họp của bạn bằng ngôn ngữ tự nhiên. AI sẽ giúp bạn tạo chi tiết cuộc họp.
+                </p>
+                <div class="mb-3">
+                    <label for="aiPrompt" class="form-label">
+                        <strong>Mô tả cuộc họp:</strong>
+                    </label>
+                    <textarea class="form-control" id="aiPrompt" rows="4" 
+                        placeholder="Ví dụ: Tôi muốn tạo một cuộc họp trong vòng 2 tuần để thảo luận về kế hoạch marketing quý 4. Cuộc họp kéo dài khoảng 1 giờ."></textarea>
+                    <small class="form-text text-muted">
+                        Bạn có thể nhập bằng tiếng Việt hoặc tiếng Anh
+                    </small>
+                </div>
+                <div id="aiError" class="alert alert-danger d-none"></div>
+                <div id="aiLoading" class="text-center d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang xử lý...</span>
+                    </div>
+                    <p class="mt-2">AI đang tạo chi tiết cuộc họp...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" id="generateAiBtn">
+                    <i class="bi bi-stars"></i> Tạo với AI
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle AI generation
+    document.getElementById('generateAiBtn').addEventListener('click', function() {
+        const prompt = document.getElementById('aiPrompt').value.trim();
+        const aiError = document.getElementById('aiError');
+        const aiLoading = document.getElementById('aiLoading');
+        const generateBtn = document.getElementById('generateAiBtn');
+        
+        if (!prompt) {
+            aiError.classList.remove('d-none');
+            aiError.textContent = 'Vui lòng nhập mô tả cuộc họp';
+            return;
+        }
+
+        // Hide error and show loading
+        aiError.classList.add('d-none');
+        aiLoading.classList.remove('d-none');
+        generateBtn.disabled = true;
+
+        // Get CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        // Call API
+        fetch('/api/generate-meeting-ai/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ prompt: prompt })
+        })
+        .then(response => response.json())
+        .then(data => {
+            aiLoading.classList.add('d-none');
+            generateBtn.disabled = false;
+
+            if (data.success) {
+                // Close modal and reload page to show AI-generated data
+                const aiModal = bootstrap.Modal.getInstance(document.getElementById('aiModal'));
+                aiModal.hide();
+                window.location.reload();
+            } else {
+                aiError.classList.remove('d-none');
+                aiError.textContent = data.error || 'Đã xảy ra lỗi';
+            }
+        })
+        .catch(error => {
+            aiLoading.classList.add('d-none');
+            generateBtn.disabled = false;
+            aiError.classList.remove('d-none');
+            aiError.textContent = 'Lỗi kết nối: ' + error.message;
+        });
+    });
+
+    // Clear modal when closed
+    const aiModal = document.getElementById('aiModal');
+    aiModal.addEventListener('hidden.bs.modal', function() {
+        document.getElementById('aiPrompt').value = '';
+        document.getElementById('aiError').classList.add('d-none');
+        document.getElementById('aiLoading').classList.add('d-none');
+        document.getElementById('generateAiBtn').disabled = false;
+    });
+});
+</script>
+
 {% endblock %}
