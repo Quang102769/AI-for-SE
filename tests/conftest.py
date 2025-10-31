@@ -125,4 +125,51 @@ def create_suggested_slot(db):
     return _create
 
 
+@pytest.fixture
+def create_participants_bulk(db):
+    """Factory to create multiple participants efficiently using bulk_create"""
+    def _create(meeting_request, count, has_responded=True, email_prefix='participant', **kwargs):
+        participants = [
+            Participant(
+                meeting_request=meeting_request,
+                has_responded=has_responded,
+                email=f'{email_prefix}{i}@test.com',
+                name=kwargs.get('name', f'{email_prefix.capitalize()} {i}'),
+                timezone=kwargs.get('timezone', 'UTC')
+            ) for i in range(count)
+        ]
+        return Participant.objects.bulk_create(participants)
+    return _create
+
+
+@pytest.fixture
+def create_busy_slots_bulk(db):
+    """Factory to create multiple busy slots efficiently using bulk_create"""
+    def _create(participants, start_time, end_time, **kwargs):
+        busy_slots = [
+            BusySlot(
+                participant=p,
+                start_time=start_time,
+                end_time=end_time,
+                description=kwargs.get('description', 'Busy')
+            ) for p in participants
+        ]
+        return BusySlot.objects.bulk_create(busy_slots)
+    return _create
+
+
+@pytest.fixture
+def test_dates():
+    """Pre-calculated dates for testing to avoid repeated date calculations"""
+    now = timezone.now()
+    return {
+        'yesterday': (now - timedelta(days=1)).date(),
+        'today': now.date(),
+        'tomorrow': (now + timedelta(days=1)).date(),
+        'next_week': (now + timedelta(days=7)).date(),
+        'next_month': (now + timedelta(days=30)).date(),
+        'far_future': (now + timedelta(days=100)).date(),
+    }
+
+
 

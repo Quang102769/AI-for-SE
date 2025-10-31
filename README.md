@@ -1,18 +1,18 @@
 # TimeWeave - Meeting Scheduler
 
-Ứng dụng giúp Leader tạo yêu cầu tìm thời điểm rảnh cho cuộc họp. Thành viên nhận link, nhập khoảng bận của mình. Hệ thống hợp nhất các khoảng bận, tính ra các khung rảnh phù hợp và hiển thị lịch heatmap.
+Ứng dụng giúp người quản lý (Leader) tạo yêu cầu tìm thời điểm rảnh cho cuộc họp. Thành viên nhận link, nhập khoảng bận của mình. Hệ thống hợp nhất các khoảng bận, tính ra các khung giờ phù hợp và hiển thị lịch dạng heatmap trực quan.
 
 ## Tính năng chính
 
-- ✅ **Nhanh chóng**: Tạo cuộc hẹn cho nhóm 5-50 người trong < 3 phút
-- ✅ **Không cần đăng nhập**: Chỉ cần chia sẻ link với mã token
+- ✅ **Nhanh chóng**: Tạo cuộc họp cho nhóm 5-50 người trong < 3 phút
 - ✅ **Hỗ trợ múi giờ**: Xử lý chênh lệch múi giờ tự động (UTC, Asia/Ho_Chi_Minh, v.v.)
 - ✅ **Tính toán nhanh**: Gợi ý khung giờ tối ưu < 500ms
 - ✅ **Heatmap trực quan**: Ô càng xanh đậm = càng nhiều người rảnh
 - ✅ **Wizard 3 bước**: Dễ dàng tạo yêu cầu
 - ✅ **Email Verification**: Xác thực email người dùng trước khi đăng nhập
-- ✅ **Email Invitations**: Gửi email mời cuộc họp đến người tham gia
+- ✅ **Email Invitations**: Gửi email mời họp đến người tham gia
 - ✅ **Auto Notifications**: Thông báo tự động khi chốt giờ họp
+- ✅ **AI-Powered Creation**: Tạo cuộc họp bằng ngôn ngữ tự nhiên với Gemini AI
 
 ## Tech Stack
 
@@ -21,27 +21,28 @@
 - **Frontend**: Bootstrap 5, jQuery
 - **Timezone**: pytz
 - **Email**: Resend API
+- **AI**: Google Gemini API (gemini-2.5-flash)
 - **Testing**: pytest, pytest-django, freezegun
 
-## Quick Start (TL;DR)
+## Bắt đầu nhanh (Quick Start)
 
 ```bash
-# 1. Clone và setup
+# 1. Clone và thiết lập môi trường
 git clone https://github.com/lehuymanhtan/AI-for-SE
 cd AI-for-SE
 python -m venv .venv
 source .venv/bin/activate  # hoặc .venv\Scripts\activate trên Windows
 
-# 2. Cài đặt dependencies
+# 2. Cài đặt các gói phụ thuộc (dependencies)
 pip install -r src/requirements.txt
 
 # 3. Tạo database MySQL
 mysql -u root -p -e "CREATE DATABASE sql_time_manager CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
-# 4. Cấu hình .env
+# 4. Cấu hình file .env
 cd src
 cp .env.example .env
-# Chỉnh sửa .env với thông tin database và secret key
+# Chỉnh sửa .env với thông tin database và secret key của bạn
 
 # 5. Chạy migrations
 python manage.py migrate
@@ -50,15 +51,15 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-Truy cập: http://localhost:8000
+Truy cập ứng dụng tại: http://localhost:8000
 
-## Cài đặt
+## Hướng dẫn cài đặt chi tiết
 
 ### 1. Yêu cầu hệ thống
 
 - Python 3.10+
 - MySQL 5.7+ hoặc MySQL 8.0+
-- pip
+- pip (Python package installer)
 
 ### 2. Clone repository
 
@@ -67,7 +68,7 @@ git clone https://github.com/lehuymanhtan/AI-for-SE
 cd AI-for-SE
 ```
 
-### 3. Tạo virtual environment
+### 3. Tạo môi trường ảo (virtual environment)
 
 ```bash
 python -m venv .venv
@@ -76,31 +77,31 @@ source .venv/bin/activate  # Linux/Mac
 .venv\Scripts\activate  # Windows
 ```
 
-### 4. Cài đặt dependencies
+### 4. Cài đặt các gói phụ thuộc (dependencies)
 
 ```bash
-# Cài đặt dependencies cho ứng dụng
+# Cài đặt dependencies cho ứng dụng chính
 pip install -r src/requirements.txt
 
-# Cài đặt dependencies cho test (tùy chọn, để chạy tests)
+# Cài đặt dependencies cho test (tùy chọn, chỉ cần khi chạy tests)
 pip install -r tests/requirements-test.txt
 ```
 
-### 5. Cấu hình Environment Variables
+### 5. Cấu hình biến môi trường (Environment Variables)
 
-Sao chép file `.env.example` và điều chỉnh:
+Sao chép file `.env.example` và điều chỉnh theo cấu hình của bạn:
 
 ```bash
 cd src
 cp .env.example .env
 ```
 
-Chỉnh sửa file `.env` với thông tin của bạn:
+Chỉnh sửa file `.env` với thông tin cụ thể:
 
 ```bash
 # Django Settings
 SECRET_KEY=your-secret-key-here  # Tạo mới bằng: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
-DEBUG=True  # Đặt False trong production
+DEBUG=True  # Đặt False khi triển khai production
 
 # Database Settings
 DB_NAME=sql_time_manager
@@ -112,6 +113,9 @@ DB_PORT=3306
 # Email Settings (Resend)
 RESEND_API_KEY=re_xxxxxxxxxxxxx  # Lấy từ https://resend.com/
 DEFAULT_FROM_EMAIL=noreply@yourdomain.com
+
+# AI Settings (Google Gemini)
+GEMINI_API_KEY=your-gemini-api-key-here  # Lấy từ https://aistudio.google.com/
 
 # Site URL
 SITE_URL=http://localhost:8000  # Thay bằng domain thực tế khi deploy
@@ -139,59 +143,70 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
-### 8. Tạo superuser (tùy chọn)
+### 8. Tạo tài khoản quản trị (superuser) - tùy chọn
 
 ```bash
 python manage.py createsuperuser
 ```
 
-### 9. Chạy development server
+### 9. Khởi động development server
 
 ```bash
 # Đảm bảo bạn đang ở trong thư mục src/
 python manage.py runserver
 ```
 
-Truy cập: http://localhost:8000
+Truy cập ứng dụng tại: http://localhost:8000
 
 **Chạy trên port khác:**
+
 ```bash
 python manage.py runserver 8080
 ```
 
 **Cho phép truy cập từ mạng ngoài:**
+
 ```bash
 python manage.py runserver 0.0.0.0:8000
 ```
 
-**Lưu ý về Email:** 
-- Trong development mode, email sẽ được in ra console terminal
-- Để gửi email thật, cấu hình `RESEND_API_KEY` trong file `.env`
+**Lưu ý về Email:**
+
+- Trong chế độ development, email sẽ được in ra console terminal
+- Để gửi email thực tế, cần cấu hình `RESEND_API_KEY` trong file `.env`
 - 📧 **Xem hướng dẫn đầy đủ:** [EMAIL_SETUP_GUIDE.md](EMAIL_SETUP_GUIDE.md)
 
-## Deployment (Production)
+**Lưu ý về AI:**
 
-### Chuẩn bị cho Production
+- Để sử dụng tính năng tạo cuộc họp bằng AI, cần cấu hình `GEMINI_API_KEY` trong file `.env`
+- Lấy API key miễn phí tại: https://aistudio.google.com/
 
-#### 1. Cấu hình Environment Variables
+## Triển khai (Deployment) Production
+
+### Chuẩn bị cho môi trường Production
+
+#### 1. Cấu hình biến môi trường (Environment Variables)
 
 Cập nhật file `.env` với các giá trị production:
 
 ```bash
 # Django Settings
-SECRET_KEY=<your-strong-secret-key>  # Phải là key mạnh và bí mật
-DEBUG=False  # QUAN TRỌNG: Tắt DEBUG mode
+SECRET_KEY=<your-strong-secret-key>  # Phải là key mạnh và bảo mật
+DEBUG=False  # QUAN TRỌNG: Tắt chế độ DEBUG
 
 # Database Settings
 DB_NAME=sql_time_manager
 DB_USER=<production-db-user>
 DB_PASSWORD=<strong-db-password>
-DB_HOST=<db-host>  # Có thể là localhost hoặc remote DB
+DB_HOST=<db-host>  # Có thể là localhost hoặc remote database
 DB_PORT=3306
 
 # Email Settings (Resend)
 RESEND_API_KEY=<production-resend-api-key>
 DEFAULT_FROM_EMAIL=noreply@yourdomain.com
+
+# AI Settings (Google Gemini)
+GEMINI_API_KEY=<production-gemini-api-key>
 
 # Site URL
 SITE_URL=https://yourdomain.com  # URL production
@@ -202,7 +217,7 @@ EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS=24
 
 #### 2. Cập nhật ALLOWED_HOSTS
 
-Chỉnh sửa `src/time_mamager/settings.py`:
+Chỉnh sửa file `src/time_mamager/settings.py`:
 
 ```python
 ALLOWED_HOSTS = [
@@ -217,7 +232,7 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 ```
 
-#### 3. Thu thập Static Files
+#### 3. Thu thập các file tĩnh (Static Files)
 
 ```bash
 cd src
@@ -230,9 +245,9 @@ python manage.py collectstatic --noinput
 python manage.py migrate --noinput
 ```
 
-### Deployment Options
+### Các phương án triển khai (Deployment Options)
 
-#### Option 1: Deployment với Gunicorn + Nginx (Recommended)
+#### Phương án 1: Triển khai với Gunicorn + Nginx (Khuyến nghị)
 
 **Bước 1: Cài đặt Gunicorn**
 
@@ -240,7 +255,7 @@ python manage.py migrate --noinput
 pip install gunicorn
 ```
 
-**Bước 2: Tạo Gunicorn service file**
+**Bước 2: Tạo file cấu hình Gunicorn service**
 
 Tạo file `/etc/systemd/system/timeweave.service`:
 
@@ -264,7 +279,7 @@ ExecStart=/path/to/.venv/bin/gunicorn \
 WantedBy=multi-user.target
 ```
 
-**Bước 3: Start và enable service**
+**Bước 3: Khởi động và bật service**
 
 ```bash
 sudo systemctl start timeweave
@@ -282,7 +297,7 @@ server {
     server_name yourdomain.com www.yourdomain.com;
 
     location = /favicon.ico { access_log off; log_not_found off; }
-    
+
     location /static/ {
         alias /path/to/AI-for-SE/src/staticfiles/;
     }
@@ -294,7 +309,7 @@ server {
 }
 ```
 
-**Bước 5: Enable site và restart Nginx**
+**Bước 5: Kích hoạt site và khởi động lại Nginx**
 
 ```bash
 sudo ln -s /etc/nginx/sites-available/timeweave /etc/nginx/sites-enabled/
@@ -309,11 +324,11 @@ sudo apt install certbot python3-certbot-nginx
 sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
 ```
 
-#### Option 2: Deployment với Docker
+#### Phương án 2: Triển khai với Docker
 
 **Bước 1: Tạo Dockerfile**
 
-Tạo file `Dockerfile` trong thư mục root:
+Tạo file `Dockerfile` trong thư mục gốc (root):
 
 ```dockerfile
 FROM python:3.10-slim
@@ -349,10 +364,10 @@ EXPOSE 8000
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "time_mamager.wsgi:application"]
 ```
 
-**Bước 2: Tạo docker-compose.yml**
+**Bước 2: Tạo file docker-compose.yml**
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   db:
@@ -396,52 +411,56 @@ volumes:
   static_volume:
 ```
 
-**Bước 3: Build và chạy containers**
+**Bước 3: Build và chạy các container**
 
 ```bash
 docker-compose up -d --build
 ```
 
-**Bước 4: Run migrations trong container**
+**Bước 4: Chạy migrations trong container**
 
 ```bash
 docker-compose exec web python manage.py migrate
 docker-compose exec web python manage.py createsuperuser
 ```
 
-#### Option 3: Deployment trên Platform as a Service (PaaS)
+#### Phương án 3: Triển khai trên nền tảng Platform as a Service (PaaS)
 
 **Railway.app / Render.com / Heroku:**
 
-1. Thêm `Procfile` vào root directory:
+1. Thêm file `Procfile` vào thư mục gốc (root directory):
+
 ```
 web: cd src && gunicorn time_mamager.wsgi:application --log-file -
 ```
 
-2. Thêm `runtime.txt`:
+2. Thêm file `runtime.txt`:
+
 ```
 python-3.10.12
 ```
 
-3. Cấu hình environment variables trên platform dashboard
-4. Deploy từ GitHub repository
+3. Cấu hình các biến môi trường (environment variables) trên dashboard của nền tảng
+4. Triển khai từ repository GitHub
 
-### Post-Deployment Checklist
+### Danh sách kiểm tra sau khi triển khai (Post-Deployment Checklist)
 
-- [ ] Kiểm tra `DEBUG=False` trong production
+- [ ] Kiểm tra `DEBUG=False` trong môi trường production
 - [ ] Cấu hình ALLOWED_HOSTS và CSRF_TRUSTED_ORIGINS đúng
-- [ ] Database backups được thiết lập
-- [ ] SSL certificate đã được cài đặt
-- [ ] Static files được serve đúng cách
-- [ ] Email service (Resend) hoạt động
-- [ ] Logs được cấu hình và monitor
-- [ ] Firewall rules được thiết lập đúng
-- [ ] Database credentials mạnh và bảo mật
-- [ ] SECRET_KEY là unique và bí mật
+- [ ] Thiết lập sao lưu database (database backups)
+- [ ] Cài đặt chứng chỉ SSL (SSL certificate)
+- [ ] File tĩnh (static files) được phục vụ đúng cách
+- [ ] Dịch vụ email (Resend) hoạt động bình thường
+- [ ] Dịch vụ AI (Gemini) hoạt động bình thường
+- [ ] Logs được cấu hình và giám sát (monitor)
+- [ ] Quy tắc firewall được thiết lập đúng
+- [ ] Thông tin đăng nhập database mạnh và bảo mật
+- [ ] SECRET_KEY là duy nhất và bí mật
 
-### Monitoring và Maintenance
+### Giám sát và Bảo trì (Monitoring và Maintenance)
 
 **Xem logs:**
+
 ```bash
 # Gunicorn service logs
 sudo journalctl -u timeweave -f
@@ -454,16 +473,18 @@ sudo tail -f /var/log/nginx/error.log
 docker-compose logs -f web
 ```
 
-**Database backup:**
+**Sao lưu database (Database backup):**
+
 ```bash
-# Backup
+# Sao lưu
 mysqldump -u <user> -p sql_time_manager > backup_$(date +%Y%m%d_%H%M%S).sql
 
-# Restore
+# Khôi phục
 mysql -u <user> -p sql_time_manager < backup_20231031_120000.sql
 ```
 
-**Restart service:**
+**Khởi động lại dịch vụ (Restart service):**
+
 ```bash
 # Gunicorn
 sudo systemctl restart timeweave
@@ -477,9 +498,9 @@ docker-compose restart web
 
 ## Chạy Tests
 
-Project này có bộ test suite hoàn chỉnh nằm trong thư mục `tests/`.
+Dự án này có bộ test suite đầy đủ nằm trong thư mục `tests/`.
 
-### Phương pháp 1: Sử dụng wrapper script (Khuyến nghị)
+### Phương pháp 1: Sử dụng script wrapper (Khuyến nghị)
 
 Script `run_tests.sh` tự động cấu hình môi trường test:
 
@@ -496,7 +517,7 @@ chmod +x run_tests.sh
 # Chạy một file test cụ thể
 ./run_tests.sh tests/test_generate_time_slots.py
 
-# Chạy một test function cụ thể
+# Chạy một hàm test cụ thể
 ./run_tests.sh tests/test_generate_time_slots.py::test_basic_slot_generation
 ```
 
@@ -511,7 +532,7 @@ python -m pytest tests -v
 # Chạy với báo cáo coverage
 PYTHONPATH=$(pwd)/src \
 DJANGO_SETTINGS_MODULE=time_mamager.test_settings \
-python -m pytest tests --cov=meetings.utils --cov-report=term-missing --cov-report=html
+python -m pytest tests --cov=meetings --cov-report=html
 
 # Chạy một file test cụ thể
 PYTHONPATH=$(pwd)/src \
@@ -525,59 +546,61 @@ python -m pytest tests/test_is_participant_available.py -v
 - **Pytest config**: `src/pytest.ini`
 - **Test dependencies**: `tests/requirements-test.txt`
 
-
 ### Xử lý lỗi khi chạy Tests
 
 **Lỗi: ModuleNotFoundError: No module named 'meetings'**
+
 ```bash
-# Đảm bảo PYTHONPATH chứa src/
+# Đảm bảo PYTHONPATH chứa thư mục src/
 export PYTHONPATH=$(pwd)/src
 ```
 
 **Lỗi: django.core.exceptions.ImproperlyConfigured**
+
 ```bash
-# Đảm bảo set Django test settings
+# Đảm bảo thiết lập Django test settings
 export DJANGO_SETTINGS_MODULE=time_mamager.test_settings
 ```
 
 **Lỗi: ImportError: No module named 'pymysql'**
+
 ```bash
 # Cài đặt dependencies
 pip install -r src/requirements.txt
 ```
 
-## Cấu trúc project
+## Cấu trúc dự án (Project Structure)
 
 ```
 AI-for-SE/
-├── README.md                  # Main README (test-focused)
-├── README copy.md             # This file
-├── run_tests.sh              # Test runner wrapper script
-├── prompts/                  # AI prompts and logs
+├── README.md                  # README chính (tập trung vào test)
+├── README copy.md             # File này
+├── run_tests.sh              # Script wrapper cho test runner
+├── prompts/                  # AI prompts và logs
 │   ├── log.md
 │   ├── optimize_log.md
 │   ├── optimize.md
 │   ├── test_analysis.md
 │   └── test_design.md
-├── src/                      # Django application source
+├── src/                      # Mã nguồn ứng dụng Django
 │   ├── manage.py
-│   ├── requirements.txt      # Application dependencies
-│   ├── pytest.ini           # Pytest configuration
+│   ├── requirements.txt      # Dependencies cho ứng dụng
+│   ├── pytest.ini           # Cấu hình Pytest
 │   ├── PROJECT_SUMMARY.md
 │   ├── QUICKSTART.md
-│   ├── README.md            # Application README
-│   ├── time_mamager/        # Django project settings
+│   ├── README.md            # README cho ứng dụng
+│   ├── time_mamager/        # Settings của Django project
 │   │   ├── __init__.py
-│   │   ├── settings.py      # Production settings
-│   │   ├── test_settings.py # Test settings
+│   │   ├── settings.py      # Settings production
+│   │   ├── test_settings.py # Settings test
 │   │   ├── urls.py
 │   │   └── wsgi.py
-│   ├── meetings/            # Main Django app
+│   ├── meetings/            # Django app chính
 │   │   ├── models.py       # MeetingRequest, Participant, BusySlot, SuggestedSlot
-│   │   ├── views.py        # Leader & Member workflows
-│   │   ├── forms.py        # Form definitions
+│   │   ├── views.py        # Workflows cho Leader & Member
+│   │   ├── forms.py        # Định nghĩa forms
 │   │   ├── urls.py         # URL routing
-│   │   ├── utils.py        # Core algorithms (slot finding, availability)
+│   │   ├── utils.py        # Thuật toán cốt lõi (tìm slots, kiểm tra availability)
 │   │   ├── admin.py        # Django admin
 │   │   ├── migrations/     # Database migrations
 │   │   ├── templates/      # HTML templates
@@ -599,8 +622,8 @@ AI-for-SE/
 └── tests/                   # Test suite
     ├── __init__.py
     ├── conftest.py         # Pytest fixtures
-    ├── requirements-test.txt # Test dependencies
-    ├── run_tests.sh        # Alternative test runner
+    ├── requirements-test.txt # Dependencies cho test
+    ├── run_tests.sh        # Test runner thay thế
     ├── test_calculate_slot_availability.py
     ├── test_generate_suggested_slots.py
     ├── test_generate_time_slots.py
@@ -608,59 +631,68 @@ AI-for-SE/
     └── test_is_participant_available.py
 ```
 
-## Luồng sử dụng
+## Luồng sử dụng (User Flow)
 
-### Leader tạo yêu cầu (3 bước)
+### Người quản lý (Leader) tạo yêu cầu (3 bước)
 
-1. **Bước 1 - Cấu hình**: 
+1. **Bước 1 - Cấu hình cuộc họp**:
+
    - Tiêu đề, mô tả cuộc họp
    - Thời lượng (15-480 phút)
    - Phạm vi ngày tìm kiếm
    - Khung giờ làm việc
    - Bước quét (15/30/60 phút)
    - Múi giờ mặc định
+   - **Tùy chọn: Tạo bằng AI** - Nhập mô tả ngôn ngữ tự nhiên, AI tự động điền thông tin
 
 2. **Bước 2 - Thêm người tham gia** (tùy chọn):
+
    - Thêm từng người hoặc import hàng loạt
    - Có thể bỏ qua và gửi link công khai
 
 3. **Bước 3 - Xác nhận**:
-   - Xem preview heatmap rỗng
+   - Xem preview heatmap trống
    - Nhận link chia sẻ
-   - Gửi cho thành viên
+   - Gửi cho thành viên qua email hoặc link trực tiếp
 
-### Member điền lịch bận
+### Thành viên (Member) điền lịch bận
 
 1. Mở link được chia sẻ
 2. Nhập tên, email (tùy chọn), chọn múi giờ
-3. Kéo chuột trên calendar để chọn các khoảng bận
-4. Lưu và xem heatmap hiện tại
+3. **Tùy chọn: Dùng AI** - Nhập mô tả lịch bận bằng ngôn ngữ tự nhiên
+4. Hoặc kéo chuột trên lịch để chọn các khoảng bận
+5. Lưu và xem heatmap hiện tại
 
-### Leader xem kết quả & chốt lịch
+### Người quản lý xem kết quả & chốt lịch
 
 1. Theo dõi tiến độ phản hồi (% đã trả lời)
 2. Xem heatmap với các mức độ màu xanh
 3. Xem top gợi ý (sắp xếp theo số người rảnh)
 4. Chọn và chốt khung giờ phù hợp
-5. Xuất .ics hoặc tạo event (tính năng tương lai)
+5. Hệ thống tự động gửi email thông báo cho tất cả người tham gia
+6. Xuất .ics hoặc tạo event (tính năng tương lai)
 
 ## Models chính
 
 ### MeetingRequest
+
 - Thông tin yêu cầu họp
 - Cấu hình (thời lượng, phạm vi ngày, múi giờ)
 - Token để chia sẻ
 
 ### Participant
+
 - Người tham gia
 - Tên, email, múi giờ
 - Trạng thái phản hồi
 
 ### BusySlot
+
 - Khoảng thời gian bận của một participant
 - Lưu dưới dạng UTC
 
 ### SuggestedSlot
+
 - Khung giờ được gợi ý
 - Số người rảnh / tổng số người
 - Heatmap level (0-5)
@@ -670,28 +702,31 @@ AI-for-SE/
 - `GET /api/request/<id>/heatmap/` - Lấy dữ liệu heatmap
 - `GET /api/request/<id>/suggestions/` - Lấy danh sách gợi ý
 - `POST /r/<id>/save/` - Lưu busy slots của participant
+- `POST /api/generate-meeting-with-ai/` - Tạo thông tin cuộc họp bằng AI
+- `POST /api/generate-busy-times-with-ai/` - Tạo lịch bận bằng AI
 
-## Admin Interface
+## Giao diện quản trị (Admin Interface)
 
-Truy cập: http://localhost:8000/admin
+Truy cập tại: http://localhost:8000/admin
 
 Quản lý:
+
 - Meeting Requests
 - Participants
 - Busy Slots
 - Suggested Slots
+- User Profiles
 
 ## Tính năng nâng cao (TODO)
 
 - [ ] Export to ICS file
 - [ ] Google Calendar integration (OAuth)
 - [ ] Outlook Calendar integration
-- [ ] Email notifications
 - [ ] Real-time updates với WebSocket
 - [ ] Multi-language support
 - [ ] Mobile app
 
-## Xử lý sự cố
+## Xử lý sự cố thường gặp (Troubleshooting)
 
 ### Lỗi kết nối MySQL
 
@@ -699,7 +734,7 @@ Quản lý:
 django.db.utils.OperationalError: (2003, "Can't connect to MySQL server...")
 ```
 
-**Giải pháp**: Kiểm tra MySQL service đang chạy và thông tin kết nối trong `src/time_mamager/settings.py`
+**Giải pháp**: Kiểm tra dịch vụ MySQL đang chạy và thông tin kết nối trong `src/time_mamager/settings.py`
 
 ### Lỗi import pytz
 
@@ -707,7 +742,8 @@ django.db.utils.OperationalError: (2003, "Can't connect to MySQL server...")
 ModuleNotFoundError: No module named 'pytz'
 ```
 
-**Giải pháp**: 
+**Giải pháp**:
+
 ```bash
 pip install pytz
 ```
@@ -719,13 +755,27 @@ ModuleNotFoundError: No module named 'pymysql'
 ```
 
 **Giải pháp**:
+
 ```bash
 pip install pymysql
 ```
 
-### Static files không load
+### Lỗi Gemini API
+
+```
+Error: Gemini API key chưa được cấu hình
+```
+
+**Giải pháp**: Thêm `GEMINI_API_KEY` vào file `.env`:
+
+```bash
+GEMINI_API_KEY=your-gemini-api-key-here
+```
+
+### Static files không tải được
 
 **Giải pháp**:
+
 ```bash
 cd src
 python manage.py collectstatic
@@ -733,18 +783,20 @@ python manage.py collectstatic
 
 ### Tests không chạy được
 
-**Giải pháp**: Đảm bảo đã set đúng PYTHONPATH và DJANGO_SETTINGS_MODULE:
+**Giải pháp**: Đảm bảo đã thiết lập đúng PYTHONPATH và DJANGO_SETTINGS_MODULE:
+
 ```bash
 export PYTHONPATH=$(pwd)/src
 export DJANGO_SETTINGS_MODULE=time_mamager.test_settings
 ```
 
-Hoặc sử dụng wrapper script:
+Hoặc sử dụng script wrapper:
+
 ```bash
 ./run_tests.sh
 ```
 
-## Quy trình phát triển
+## Quy trình phát triển (Development Workflow)
 
 ### Chạy ứng dụng
 
@@ -775,28 +827,28 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
-## Contributing
+## Đóng góp cho dự án (Contributing)
 
-1. Fork project
-2. Tạo feature branch (`git checkout -b feature/TinhNangMoi`)
+1. Fork dự án
+2. Tạo nhánh tính năng (feature branch) (`git checkout -b feature/TinhNangMoi`)
 3. Viết tests cho những thay đổi của bạn
-4. Chạy test suite để đảm bảo tất cả đều pass (`./run_tests.sh`)
+4. Chạy test suite để đảm bảo tất cả tests đều pass (`./run_tests.sh`)
 5. Commit các thay đổi (`git commit -m 'Thêm tính năng mới'`)
-6. Push lên branch (`git push origin feature/TinhNangMoi`)
+6. Push lên nhánh (`git push origin feature/TinhNangMoi`)
 7. Tạo Pull Request
 
-## Tài nguyên liên quan
+## Tài nguyên liên quan (Resources)
 
-- **Project Slide**: [Canva Presentation](https://www.canva.com/design/DAG2nlsFR1k/soonJh0gIRisxeUub7zJuw/edit)
-- **Test-focused README**: [README.md](README.md)
-- **Application README**: [src/README.md](src/README.md)
-- **Project Summary**: [src/PROJECT_SUMMARY.md](src/PROJECT_SUMMARY.md)
-- **Quick Start Guide**: [src/QUICKSTART.md](src/QUICKSTART.md)
+- **Slide thuyết trình dự án (Project Slide)**: [Canva Presentation](https://www.canva.com/design/DAG2nlsFR1k/soonJh0gIRisxeUub7zJuw/edit)
+- **README tập trung vào test**: [README.md](README.md)
+- **README cho ứng dụng**: [src/README.md](src/README.md)
+- **Tóm tắt dự án**: [src/PROJECT_SUMMARY.md](src/PROJECT_SUMMARY.md)
+- **Hướng dẫn bắt đầu nhanh**: [src/QUICKSTART.md](src/QUICKSTART.md)
 
-## License
+## Giấy phép (License)
 
 MIT License
 
-## Author
+## Tác giả (Author)
 
 TimeWeave Team

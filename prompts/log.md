@@ -1,10 +1,8 @@
 # 1. Phân tích
 
-CORE FEATURE: Tính toán các khoảng thời gian rảnh
-
 ### prompt:
 ```
-Analyze this Project's `Calculating overlapping free time slots` feature and identify all functions that need unit testing:
+Analyze this Project's features and identify all functions that need unit testing:
 
 For each function, identify:
 1. Main functionality
@@ -12,25 +10,26 @@ For each function, identify:
 3. Expected return values
 4. Potential edge cases
 5. Dependencies that need mocking
-Output into an md file, called `test_analystic.md`
+
+Output into an md file `test/test_analystic.md`
 ```
-OUTPUT: [test_analysis.md](test_analysis.md)
+OUTPUT: [test_analystic.md](test_analystic.md)
 
 # 2. Thiết kế test case:
 
 ### prompt:
 ```
-Generate comprehensive unit test cases for this Project's `Calculating overlapping free time slots` feature based on this `test_analysis.md` document.
+Generate comprehensive unit test cases for this Project's features based on this `test_analysis.md` document.
 Output in a table with these columns `Category,Test Case, Input, Expected` and save into `test/test_design.md`
 ```
 OUTPUT: [test_design.md](test_design.md)
-
+ 
 # 3. Sinh Test Code
 prompt: 
 
 ```
 Based on this document `test/test_design.md`,
-Create pytest unit tests for this Project's `Calculating overlapping free time slots` feature.
+Create pytest unit tests for this Project's features.
 Save all test in `test` folder
 ```
 

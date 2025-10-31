@@ -26,6 +26,10 @@ urlpatterns = [
     path('create/step3/', views.create_request_step3, name='create_request_step3'),
     path('create/success/<uuid:request_id>/', views.request_created, name='request_created'),
     
+    # AI-Powered Meeting Creation
+    path('api/generate-meeting-ai/', views.generate_meeting_with_ai, name='generate_meeting_with_ai'),
+    path('api/generate-busy-times-ai/', views.generate_busy_times_with_ai, name='generate_busy_times_with_ai'),
+    
     # Leader Workflow - View & Manage
     path('request/<uuid:request_id>/', views.view_request, name='view_request'),
     path('request/<uuid:request_id>/edit/', views.edit_request, name='edit_request'),

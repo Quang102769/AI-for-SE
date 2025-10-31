@@ -42,17 +42,21 @@ class TestCalculateSlotAvailability:
         assert total == 0, "Should have 0 total (only count responded)"
         assert participant_ids == [], "Should have empty participant list"
     
-    def test_all_available(self, sample_meeting_request, create_participant):
-        """All Available: All participants available"""
-        # Create 5 participants, all responded and available
-        participants = []
-        for i in range(5):
-            p = create_participant(
-                sample_meeting_request, 
+    def test_all_available(self, sample_meeting_request):
+        """All Available: All participants available (optimized with bulk_create)"""
+        from meetings.models import Participant
+        
+        # Create 5 participants using bulk_create, all responded and available
+        participants = [
+            Participant(
+                meeting_request=sample_meeting_request,
                 has_responded=True,
-                email=f'participant{i}@test.com'
-            )
-            participants.append(p)
+                email=f'participant{i}@test.com',
+                name=f'Participant {i}',
+                timezone='UTC'
+            ) for i in range(5)
+        ]
+        participants = Participant.objects.bulk_create(participants)
         
         start_time = pytz.UTC.localize(datetime(2024, 1, 1, 9, 0))
         end_time = pytz.UTC.localize(datetime(2024, 1, 1, 10, 0))
@@ -120,19 +124,35 @@ class TestCalculateSlotAvailability:
         assert total == 10, "Total should be 10"
         assert len(participant_ids) == 7, "Should have 7 participant IDs"
     
-    def test_none_available(self, sample_meeting_request, create_participant, create_busy_slot):
-        """None Available: All participants busy"""
+    def test_none_available(self, sample_meeting_request):
+        """None Available: All participants busy (optimized with bulk_create)"""
+        from meetings.models import Participant, BusySlot
+        
         start_time = pytz.UTC.localize(datetime(2024, 1, 1, 9, 0))
         end_time = pytz.UTC.localize(datetime(2024, 1, 1, 10, 0))
         
-        # Create 5 participants, all responded but all busy
-        for i in range(5):
-            p = create_participant(
-                sample_meeting_request, 
+        # Create 5 participants using bulk_create, all responded but all busy
+        participants = [
+            Participant(
+                meeting_request=sample_meeting_request,
                 has_responded=True,
-                email=f'busy{i}@test.com'
-            )
-            create_busy_slot(p, start_time, end_time)
+                email=f'busy{i}@test.com',
+                name=f'Busy {i}',
+                timezone='UTC'
+            ) for i in range(5)
+        ]
+        participants = Participant.objects.bulk_create(participants)
+        
+        # Create busy slots for all participants
+        busy_slots = [
+            BusySlot(
+                participant=p,
+                start_time=start_time,
+                end_time=end_time,
+                description='Busy'
+            ) for p in participants
+        ]
+        BusySlot.objects.bulk_create(busy_slots)
         
         available, total, participant_ids = calculate_slot_availability(
             sample_meeting_request, start_time, end_time
@@ -142,35 +162,59 @@ class TestCalculateSlotAvailability:
         assert total == 5, "Total should be 5 (includes busy participants)"
         assert participant_ids == [], "Should have empty participant list"
     
-    def test_mixed_response(self, sample_meeting_request, create_participant, create_busy_slot):
-        """Mixed Response: Some responded, some not"""
+    def test_mixed_response(self, sample_meeting_request):
+        """Mixed Response: Some responded, some not (optimized with bulk_create)"""
+        from meetings.models import Participant, BusySlot
+        
         start_time = pytz.UTC.localize(datetime(2024, 1, 1, 9, 0))
         end_time = pytz.UTC.localize(datetime(2024, 1, 1, 10, 0))
         
         # 6 responded and available
-        for i in range(6):
-            create_participant(
-                sample_meeting_request, 
+        available_participants = [
+            Participant(
+                meeting_request=sample_meeting_request,
                 has_responded=True,
-                email=f'available{i}@test.com'
-            )
+                email=f'available{i}@test.com',
+                name=f'Available {i}',
+                timezone='UTC'
+            ) for i in range(6)
+        ]
+        Participant.objects.bulk_create(available_participants)
         
         # 2 responded but busy
-        for i in range(2):
-            p = create_participant(
-                sample_meeting_request, 
+        busy_participants = [
+            Participant(
+                meeting_request=sample_meeting_request,
                 has_responded=True,
-                email=f'busy{i}@test.com'
-            )
-            create_busy_slot(p, start_time, end_time)
+                email=f'busy{i}@test.com',
+                name=f'Busy {i}',
+                timezone='UTC'
+            ) for i in range(2)
+        ]
+        busy_participants = Participant.objects.bulk_create(busy_participants)
+        
+        # Create busy slots for busy participants
+        busy_slots = [
+            BusySlot(
+                participant=p,
+                start_time=start_time,
+                end_time=end_time,
+                description='Busy'
+            ) for p in busy_participants
+        ]
+        BusySlot.objects.bulk_create(busy_slots)
         
         # 2 not responded
-        for i in range(2):
-            create_participant(
-                sample_meeting_request, 
+        not_responded = [
+            Participant(
+                meeting_request=sample_meeting_request,
                 has_responded=False,
-                email=f'notresponded{i}@test.com'
-            )
+                email=f'notresponded{i}@test.com',
+                name=f'NotResponded {i}',
+                timezone='UTC'
+            ) for i in range(2)
+        ]
+        Participant.objects.bulk_create(not_responded)
         
         available, total, participant_ids = calculate_slot_availability(
             sample_meeting_request, start_time, end_time
@@ -180,25 +224,42 @@ class TestCalculateSlotAvailability:
         assert total == 8, "Total should be 8 (only count who responded)"
         assert len(participant_ids) == 6, "Should have 6 participant IDs"
     
-    def test_complex_busy_patterns(self, sample_meeting_request, create_participant, create_busy_slot):
-        """Complex Busy Patterns: Participants with multiple busy slots"""
+    def test_complex_busy_patterns(self, sample_meeting_request):
+        """Complex Busy Patterns: Participants with multiple busy slots (optimized with bulk_create)"""
+        from meetings.models import Participant, BusySlot
+        
         start_time = pytz.UTC.localize(datetime(2024, 1, 1, 9, 0))
         end_time = pytz.UTC.localize(datetime(2024, 1, 1, 10, 0))
         
-        # P1: busy 09:00-09:30
-        p1 = create_participant(sample_meeting_request, has_responded=True, email='p1@test.com')
-        busy_start = pytz.UTC.localize(datetime(2024, 1, 1, 9, 0))
-        busy_end = pytz.UTC.localize(datetime(2024, 1, 1, 9, 30))
-        create_busy_slot(p1, busy_start, busy_end)
+        # Create 3 participants using bulk_create
+        participants_data = [
+            Participant(
+                meeting_request=sample_meeting_request,
+                has_responded=True,
+                email=f'p{i+1}@test.com',
+                name=f'P{i+1}',
+                timezone='UTC'
+            ) for i in range(3)
+        ]
+        participants = Participant.objects.bulk_create(participants_data)
+        p1, p2, p3 = participants
         
-        # P2: busy 09:30-10:00
-        p2 = create_participant(sample_meeting_request, has_responded=True, email='p2@test.com')
-        busy_start = pytz.UTC.localize(datetime(2024, 1, 1, 9, 30))
-        busy_end = pytz.UTC.localize(datetime(2024, 1, 1, 10, 0))
-        create_busy_slot(p2, busy_start, busy_end)
-        
-        # P3: no busy slots
-        p3 = create_participant(sample_meeting_request, has_responded=True, email='p3@test.com')
+        # P1: busy 09:00-09:30, P2: busy 09:30-10:00
+        busy_slots = [
+            BusySlot(
+                participant=p1,
+                start_time=pytz.UTC.localize(datetime(2024, 1, 1, 9, 0)),
+                end_time=pytz.UTC.localize(datetime(2024, 1, 1, 9, 30)),
+                description='Busy'
+            ),
+            BusySlot(
+                participant=p2,
+                start_time=pytz.UTC.localize(datetime(2024, 1, 1, 9, 30)),
+                end_time=pytz.UTC.localize(datetime(2024, 1, 1, 10, 0)),
+                description='Busy'
+            )
+        ]
+        BusySlot.objects.bulk_create(busy_slots)
         
         available, total, participant_ids = calculate_slot_availability(
             sample_meeting_request, start_time, end_time
