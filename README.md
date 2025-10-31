@@ -511,7 +511,7 @@ python -m pytest tests -v
 # Chạy với báo cáo coverage
 PYTHONPATH=$(pwd)/src \
 DJANGO_SETTINGS_MODULE=time_mamager.test_settings \
-python -m pytest tests --cov=meetings.utils --cov-report=term-missing --cov-report=html
+python -m pytest tests --cov=meetings --cov-report=html
 
 # Chạy một file test cụ thể
 PYTHONPATH=$(pwd)/src \
